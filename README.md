@@ -5,13 +5,13 @@ En este repositorio podéis encontrar los códigos de los ejemplos que se han mo
 ![Resultado del análisis](./assets/Fraude.png)
 
 2. ArcGIS Notebook: Análisis de siniestralidad.
-3. ArcGIS Maps SDK for JavaScript: Aplicación con renderizado personalizado con Arcade. [Código](./index.html) 
+3. ArcGIS Maps SDK for JavaScript: Aplicación con renderizado personalizado con Arcade. [Código](./index.html) - [Aplicación](https://esri-es.github.io/workshop_analitica_avanzada/index.html)
 ![Uso del suelo en Rueda](./assets/Rueda1.png)
-4. ArcGIS Maps SDK for JavaScript: Uso de suelo en Rueda y consulta de puntos de interés via API REST (2D). [Código](./indexPlaces2d.html)
-![Uso del suelo en Rueda y puntos de interés en 2D](./assets/Rueda2.png)
-5. ArcGIS Maps SDK for JavaScript: Uso de suelo en Rueda y consulta de puntos de interés via API REST (3D). [Código](./indexPlaces3d.html)
+4. ArcGIS Maps SDK for JavaScript: Uso de suelo en Rueda y consulta de puntos de interés via API REST (2D). [Código](./indexPlaces2d.html) - [Aplicación](https://esri-es.github.io/workshop_analitica_avanzada/indexPlaces2d.html)
+![Uso del suelo en Rueda y puntos de interés en 2D](./assets/Rueda2.png) 
+5. ArcGIS Maps SDK for JavaScript: Uso de suelo en Rueda y consulta de puntos de interés via API REST (3D). [Código](./indexPlaces3d.html) - [Aplicación](https://esri-es.github.io/workshop_analitica_avanzada/indexPlaces3d.html)
 ![Uso del suelo en Rueda y puntos de interés en 3D](./assets/Rueda3.png)
-6. Renderizado de datos multidimensionales. [Código](./oceanCurrents.html)
+6. Renderizado de datos multidimensionales. [Código](./oceanCurrents.html) - [Aplicación](https://esri-es.github.io/workshop_analitica_avanzada/oceanCurrents.html)
 ![Temperatura de las corrientes marinas](./assets/TemperaturaMar.png)
 
 ## Enlaces de interés
