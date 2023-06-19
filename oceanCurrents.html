@@ -1,0 +1,185 @@
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>
+    FlowRenderer with effects and blending | Sample | ArcGIS API for
+    JavaScript 4.24
+  </title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.27/esri/themes/dark/main.css" />
+  <script src="https://js.arcgis.com/4.27/"></script>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/67/67753.png">
+
+  <!-- Calcite -->
+  <script type="module" src="https://js.arcgis.com/calcite-components/1.4.2/calcite.esm.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/1.4.2/calcite.css" />
+  <style>
+    html,
+    body,
+    #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+      background-color: #4c4c4c;
+    }
+  </style>
+
+  <script>
+    var view;
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/ImageryTileLayer",
+      "esri/layers/TileLayer",
+      "esri/layers/GroupLayer",
+      "esri/rest/support/MultipartColorRamp",
+      "esri/rest/support/AlgorithmicColorRamp",
+      "esri/Color",
+      "esri/widgets/Legend",
+      "esri/widgets/Fullscreen",
+      "esri/widgets/Expand"
+    ], function (
+      Map,
+      MapView,
+      ImageryTileLayer,
+      TileLayer,
+      GroupLayer,
+      MultipartColorRamp,
+      AlgorithmicColorRamp,
+      Color,
+      Legend,
+      Fullscreen,
+      Expand
+    ) {
+      // Mapa base con proyección especial para ver todos los océanos como una única masa de agua
+      const spilhausBasemap = new TileLayer({
+        url: "https://tiles.arcgis.com/tiles/nGt4QxSblgDfeJn9/arcgis/rest/services/Spilhaus_Vibrant_Basemap/MapServer",
+        effect: "saturate(10%) brightness(0.3)" // saturación y brillo del mapa base (tierra)
+      });
+      // Los efectos funcionan como filtros de fotos para conseguir diferentes efectos visuales para mejorar la cartografía del mapa
+
+      // Crea rampas de colores multipartes para combinar rampas de color en renderers de raster
+     
+      const colorRamp = new MultipartColorRamp({
+          colorRamps: [
+            new AlgorithmicColorRamp({
+              fromColor: new Color([20, 100, 150, 255]),
+              toColor: new Color([70, 0, 150, 255])
+            }),
+            new AlgorithmicColorRamp({
+              fromColor: new Color([70, 0, 150, 255]),
+              toColor: new Color([170, 0, 120, 255])
+            }),
+            new AlgorithmicColorRamp({
+              fromColor: new Color([170, 0, 120, 255]),
+              toColor: new Color([230, 100, 60, 255])
+            }),
+            new AlgorithmicColorRamp({
+              fromColor: new Color([230, 100, 60, 255]),
+              toColor: new Color([255, 170, 0, 255])
+            }),
+            new AlgorithmicColorRamp({
+              fromColor: new Color([255, 170, 0, 255]),
+              toColor: new Color([255, 255, 0, 255])
+            })
+          ]
+        });
+
+
+
+      // sea surface temperature, visualized with raster stretch renderer
+      const temperatureLayer = new ImageryTileLayer({
+        url: "https://tiledimageservices.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/HyCOM_Surface_Temperature___Spilhaus/ImageServer",
+        renderer: {
+          colorRamp,
+          stretchType: "min-max", // Tramo de menor a mayor 
+          type: "raster-stretch" // RasterStrechRenderer: simbología de rampa gradual de colores para cada píxel en función de su valor
+        }
+      });
+
+      // ocean currents, visualized with flow renderer
+      const currentsLayer = new ImageryTileLayer({
+        url: "https://tiledimageservices.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/Spilhaus_UV_ocean_currents/ImageServer",
+        renderer: {
+          type: "flow", // autocasts to FlowRenderer
+          density: 1,
+          maxPathLength: 10, // Longitud máxima de la la línea
+          trailWidth: "2px"
+        },
+        blendMode: "destination-in" // Modos de fusión para combinar capas. La capa de temperatura se dibuja solo donde se superpone con la capa superior, el resto es transparente. 
+      });
+
+      const groupLayer = new GroupLayer({ // Permite organizar subcapas en una capa común
+        effect: "bloom(2, 0.5px, 0.0)", // Efecto "floración" (intensidad, radio, umbral)
+        layers: [temperatureLayer, currentsLayer]
+      });
+
+      const map = new Map({
+        basemap: {
+          baseLayers: [spilhausBasemap]
+        },
+        layers: [groupLayer]
+      });
+
+      view = new MapView({
+        container: "viewDiv",
+        map: map,
+        zoom: 6,
+        center: [-3.74, 40.42]
+      });
+      // add legend for temperature layer
+      const legend = new Legend({
+        view: view,
+        layerInfos: [
+          {
+            layer: temperatureLayer,
+            title: "Temperatura de la superficie marina"
+          }
+        ]
+      });
+      view.ui.add(legend, "top-right");
+
+      // add fullscreen widget
+      fullscreen = new Fullscreen({
+        view: view
+      });
+      view.ui.add(fullscreen, "top-left");
+
+
+      const codeExpand = new Expand({
+        view: view,
+        content: document.getElementById("code"),
+        expanded: false,
+        expandIconClass: "esri-icon-visible",
+        collapseIconClass: "esri-icon-non-visible"
+      });
+      view.ui.add(codeExpand, "top-left");
+    });
+  </script>
+</head>
+
+<body>
+  <div id="viewDiv"></div>
+  <calcite-card id="code" class="calcite-theme-dark">
+    <div slot="title">Flow Renderer</div>
+    <pre style="font-size: 20px;">
+        const currentsLayer = new ImageryTileLayer({
+          url: "https://tiledimageservices.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/Spilhaus_UV_ocean_currents/ImageServer",
+          renderer: {
+            type: "flow",  // autocasts to new FlowRenderer
+            density: 1,
+            maxPathLength: 10,
+            trailWidth: "2px"
+          },
+          blendMode: "destination-in"
+        });
+      </pre>
+  </calcite-card>
+</body>
+
+</html>

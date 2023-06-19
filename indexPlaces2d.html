@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.27/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.27/"></script>
+
+    <!-- Calcite -->
+    <script type="module" src="https://js.arcgis.com/calcite-components/1.4.2/calcite.esm.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/1.4.2/calcite.css" />
+    <title>Uso del suelo en Rueda</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/2836/2836993.png">
+
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        #card-container {
+            position: absolute;
+            z-index: 2;
+            top: 10px;
+            right: 10px;
+        }
+
+        #uva {
+            width: 25px;
+        }
+
+        #viewDiv {
+            flex: 1;
+        }
+
+        #categorySelect {
+            margin: 5px;
+        }
+
+        #contents {
+            --calcite-shell-panel-min-width: 340px;
+        }
+    </style>
+</head>
+
+<body>
+    <calcite-shell>
+        <calcite-shell-panel slot="panel-start" position="start" id="contents">
+            <calcite-combobox id="categorySelect" placeholder="Filtro por categoría" overlay-positioning="fixed"
+                selection-mode="single">
+                <calcite-combobox-item value="11000" text-label="Negocios"></calcite-combobox-item>
+                <calcite-combobox-item value="12000"
+                    text-label="Ayuntamiento y lugares de interés"></calcite-combobox-item>
+                <calcite-combobox-item value="13000" text-label="Restaurantes" selected></calcite-combobox-item>
+                <calcite-combobox-item value="19000" text-label="Hoteles"></calcite-combobox-item>
+                <calcite-combobox-item value="13387" text-label="Bodegas"></calcite-combobox-item>
+
+            </calcite-combobox>
+            <calcite-panel class="contents">
+                <calcite-flow id="flow">
+                    <calcite-flow-item>
+                        <calcite-list id="results">
+                            <calcite-notice open>
+                                <div slot="message">
+                                    Selecciona un punto en el mapa para ver lugares de interés cercanos
+                                </div>
+                            </calcite-notice>
+                        </calcite-list>
+                    </calcite-flow-item>
+                </calcite-flow>
+            </calcite-panel>
+        </calcite-shell-panel>
+        <div id="card-container" style="width:280px">
+            <calcite-card>
+                <span slot="title"> <img id="uva" src="https://cdn-icons-png.flaticon.com/512/2836/2836993.png"
+                        alt="Icono racimo de uva"> Denominación de Origen Rueda</span>
+                <p>
+                    Rueda es una denominación de origen protegida cuya zona de producción se encuentra en las provincias
+                    de <b>Valladolid, Segovia y Ávila </b> (España).
+                </p>
+                <p>
+                    Esta D.O. está integrada por 72 municipios de los cuales 53 se sitúan al sur de la provincia de
+                    Valladolid, 17 al oeste de Segovia y 2 al norte de Ávila.
+                </p>
+                <p>
+                    El carácter Rueda está definido por tres elementos: la uva Verdejo, el clima mediterráneo
+                    continentalizado y los suelos cascajosos.
+                </p>
+
+                <h3>Rueda (Valladolid)</h3>
+                <p>Rueda es una localidad y municipio de la provincia de Valladolid, Castilla y León. Es centro
+                    neurálgico de una de las zonas de vinos blancos más importante de España, la Denominación de Origen
+                    Rueda. </p>
+                <p>Tiene una población de 1300 habitantes a 1 de enero de 2017, según el INE. El gentilicio es rodense o
+                    popularmente caleros, este último debido a la gran cantidad de cal que tiene esta villa.</p>
+            </calcite-card>
+        </div>
+        <div id="viewDiv"></div>
+    </calcite-shell>
+
+    <script type="text/plain" id="land-use">
+        var use = DomainName($feature,"USO_SIGPAC");
+        if(use == "Edificaciones" || use == "Zona Urbana" || use == "Viales") {
+            return "Zonas Edificadas";
+        } else if (use == "Improductivos" || use == "Tierras arables") {
+            return "No productoras";
+        } else if (use == "Pasto arbustivo" || use == "Pastizal" || use == "Pasto con arbolado") {
+            return "Pasto";
+        } else if (use == "Viñedo") {
+            return "Viñedo";
+        } else if (use == "Corrientes y superficies de agua") {
+            return "Agua";
+        } else if (use == "Forestal") {
+            return "Bosque";
+        } else if (use == "Frutales" || use == "Olivar" || use == "Frutos secos") {
+            return "Otros cultivos arbóreos";
+        }
+        
+    </script>
+
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/views/SceneView",
+            "esri/layers/FeatureLayer",
+
+            "esri/widgets/Expand",
+            "esri/widgets/BasemapGallery",
+
+            "esri/rest/places",
+            "esri/rest/support/FetchPlaceParameters",
+            "esri/rest/support/PlacesQueryParameters",
+            "esri/geometry/Circle",
+            "esri/geometry/Point",
+            "esri/Graphic",
+            "esri/layers/GraphicsLayer",
+            "esri/symbols/WebStyleSymbol"
+        ], function (
+            Map,
+            MapView,
+            SceneView,
+            FeatureLayer,
+            Expand,
+            BasemapGallery,
+            places,
+            FetchPlaceParameters,
+            PlacesQueryParameters,
+            Circle,
+            Point,
+            Graphic,
+            GraphicsLayer,
+            WebStyleSymbol
+        ) {
+
+
+            const map = new Map({
+                basemap: "streets-navigation-vector",
+            });
+
+            // 2D
+            const view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [-4.959, 41.41],
+                zoom: 14,
+                container: "viewDiv",
+                highlightOptions: {
+                    color: [0, 255, 51, 1],
+                    haloOpacity: 0.9,
+                    fillOpacity: 0.2
+                }
+            });
+
+            
+
+            const basemapGallery = new BasemapGallery({
+                view: view
+            });
+
+            const basemapExpand = new Expand({
+                view: view,
+                content: basemapGallery
+            });
+
+            view.ui.add(basemapExpand, {
+                position: "top-left"
+            });
+
+            // CAPA RUEDA
+            const landUse = document.getElementById("land-use").text;
+            let arcadeRenderer = {
+                type: "unique-value",
+                valueExpression: landUse,
+                uniqueValueInfos: [
+                    {
+                        value: "Zonas Edificadas",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [189, 126, 190, 0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "No productoras",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [253,127,111,0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Pasto",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [126,176,213, 0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Viñedo",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [178, 2244, 97, 0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Bosque",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [255,181,90,0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Agua",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [255, 238, 101, 0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Otros cultivos arbóreos",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [190, 185, 219, 0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                ],
+            };
+
+            var rueda = new FeatureLayer({
+                url: "https://services1.arcgis.com/YFraetVkEAF1lMag/ArcGIS/rest/services/Recintos_SIGPAC_Rueda/FeatureServer/0",
+                renderer: arcadeRenderer,
+            });
+            map.add(rueda)
+
+
+            //// PLACES API
+            const apiKey = "AAPK938a732fe5874959b24c4557458bd846ZveBrDaQgA4DXeaplHA2zBXSMqXuT5PmXnaEklV_EhydogS5UFiFfWfWRC9eJFN2";
+
+            let infoPanel; // Left panel for place information
+            let clickPoint; // Clicked point on the map
+            let placesQueryParameters; // Parameters for queryPlacesNearPoint()
+            let activeCategory = "13000"; // Categoría de restaurantes
+            let highlightSelect; // Feature selection highlight
+            let layer = new GraphicsLayer({
+                // Layer for places features
+                id: "graphicsLayer"
+            });
+            map.add(layer);
+
+            // Interacciones del menú de la izquierda
+            const categorySelect = document.getElementById("categorySelect");
+            const resultPanel = document.getElementById("results");
+            const flow = document.getElementById("flow");
+
+            // Simbología para el círculo que muestre el radio de búsqueda
+            const circleSymbol = {
+                type: "simple-fill",
+                style: "solid",
+                color: [3, 140, 255, 0.1],
+                outline: {
+                    width: 3,
+                    color: [3, 140, 255]
+                }
+            };
+
+
+
+            // Function that automatically creates the symbol for the points of interest
+            function getUniqueValueSymbol(name, color) {
+                return {
+                    type: "point-3d", // autocasts as new PointSymbol3D()
+                    symbolLayers: [
+                        {
+                            type: "icon", // autocasts as new IconSymbol3DLayer()
+                            resource: {
+                                href: name
+                            },
+                            size: 20,
+                            outline: {
+                                color: "white",
+                                size: 2
+                            }
+                        }
+                    ],
+
+                    verticalOffset: {
+                        screenLength: 40,
+                        maxWorldLength: 200,
+                        minWorldLength: 35
+                    },
+
+                    callout: {
+                        type: "line", // autocasts as new LineCallout3D()
+                        color: "white",
+                        size: 2,
+                        border: {
+                            color: color
+                        }
+                    }
+                };
+            }
+
+            // WebStyleSymbols para cada categoría
+            const business = new WebStyleSymbol({
+                name: "industrial-complex",
+                styleName: "Esri2DPointSymbolsStyle"
+            });
+            const community = new WebStyleSymbol({
+                name: "embassy",
+                styleName: "Esri2DPointSymbolsStyle"
+            });
+            const dining = new WebStyleSymbol({
+                name: "restaurant",
+                styleName: "Esri2DPointSymbolsStyle"
+            });
+            const hotel = new WebStyleSymbol({
+                name: "hotel",
+                styleName: "Esri2DPointSymbolsStyle"
+            });
+            const wine = new WebStyleSymbol({
+                name: "vineyard",
+                styleName: "Esri2DPointSymbolsStyle"
+            });
+            const landmark = new WebStyleSymbol({
+                name: "landmark",
+                styleName: "Esri2DPointSymbolsStyle"
+            });
+            // styleName: "EsriIconsStyle" // 3D
+            // styleName: "Esri2DPointSymbolsStyle" //2D
+            
+
+            // const business = getUniqueValueSymbol(
+            //     './images/cart-icon.png',
+            //     '#A2A68F'
+            // )
+            // const community = getUniqueValueSymbol("https://developers.arcgis.com/javascript/latest/sample-code/visualization-point-styles/live/Museum.png",
+            //     "#D13470");
+            // const dining = getUniqueValueSymbol(
+            //     "https://developers.arcgis.com/javascript/latest/sample-code/visualization-point-styles/live/Restaurant.png",
+            //     "#F97C5A");
+            // const hotel = getUniqueValueSymbol(
+            //     "https://developers.arcgis.com/javascript/latest/sample-code/visualization-point-styles/live/Hotel.png",
+            //     "#56B2D6"
+            // );
+            // const wine = getUniqueValueSymbol(
+            //     'https://cdn-icons-png.flaticon.com/512/168/168570.png',
+            //     "#D95459"
+            // );
+            // const landmark = getUniqueValueSymbol(
+            //     "https://developers.arcgis.com/javascript/latest/sample-code/visualization-point-styles/live/Park.png",
+            //     "#40C2B4"
+            // );
+
+            // Click para capturar la localización de búsqueda
+            view.on("click", (event) => {
+                view.graphics.removeAll();
+                layer.removeAll();
+                clickPoint = {};
+                clickPoint.type = "point";
+                // Convertir el click en longitud y latitud
+                clickPoint.longitude = Math.round(event.mapPoint.longitude * 1000) / 1000;
+                clickPoint.latitude = Math.round(event.mapPoint.latitude * 1000) / 1000;
+
+                clickPoint && showPlaces(clickPoint);
+            });
+
+            // Cambios en la selección de categorías
+            categorySelect.addEventListener("calciteComboboxChange", () => {
+                activeCategory = categorySelect.value;
+                layer.removeAll();
+                clickPoint && showPlaces(clickPoint);
+            });
+
+            // Muestra el área seleccionada (círculo)
+            async function showPlaces(clickPoint) {
+                // El círculo representa la localización del click y el radio de búsqueda 
+                const circleGeometry = new Circle({
+                    center: clickPoint,
+                    geodesic: true,
+                    numberOfPoints: 100,
+                    radius: 5,
+                    radiusUnit: "kilometers"
+                });
+                const circleGraphic = new Graphic({
+                    geometry: circleGeometry,
+                    symbol: circleSymbol
+                });
+                // Añadimos círculo a la vista
+                view.graphics.add(circleGraphic);
+
+
+                // Parámetros de la consulta: área de búsqueda, categorías y apiKey
+                placesQueryParameters = new PlacesQueryParameters({
+                    apiKey,
+                    categoryIds: [activeCategory],
+                    radius: 5000, // radio en metros
+                    point: clickPoint
+                });
+
+                // Resultados de la consulta
+                const results = await places.queryPlacesNearPoint(
+                    placesQueryParameters
+                );
+
+                tabulatePlaces(results);
+            }
+
+            // Procesado del array de resultados
+            function tabulatePlaces(results) {
+                resultPanel.innerHTML = "";
+                if (infoPanel) infoPanel.remove(); // Borrar elementos panel izquierdo
+                results.results.forEach((placeResult) => {
+                    addResult(placeResult);
+                });
+            }
+
+            // Añadir simbología al mapa y listar los resultados en el panel izquierdo
+            async function addResult(place) {
+                const placePoint = {
+                    type: "point",
+                    y: place.location.y,
+                    x: place.location.x
+                };
+
+                const placeGraphic = new Graphic({
+                    geometry: placePoint
+                });
+                // Símbolo en función de la categoría
+                switch (activeCategory) {
+                    case "11000":
+                        placeGraphic.symbol = business;
+                        break;
+                    case "12000":
+                        placeGraphic.symbol = community;
+                        break;
+                    case "13000":
+                        placeGraphic.symbol = dining;
+                        break;
+                    case "19000":
+                        placeGraphic.symbol = hotel;
+                        break;
+                    case "13387":
+                        placeGraphic.symbol = wine;
+                        break;
+                    default:
+                        placeGraphic.symbol = landmark;
+                }
+
+                // Añadir puntos a la capa gráfica del mapa
+                layer.graphics.add(placeGraphic);
+                map.add(layer);
+
+
+                // Parámetros para petición para obtener información detallada
+                const fetchPlaceParameters = new FetchPlaceParameters({
+                    apiKey,
+                    placeId: place.placeId,
+                    requestedFields: ["all"]
+                });
+
+                const infoDiv = document.createElement("calcite-list-item");
+                const description = `${place.categories[0].label} - ${Number((place.distance / 1000).toFixed(1))} km`;
+                infoDiv.label = place.name;
+                infoDiv.description = description;
+
+                // Al seleccionar un elemento del panel de la izquierda, se abre un popup
+                infoDiv.addEventListener("click", async () => {
+                    view.openPopup({
+                        location: placePoint,
+                        title: place.name,
+                        content: "En el panel de la izquierda tiene más información"
+                    });
+
+                    // Destacar el lugar seleccionado
+                    const layerView = await view.whenLayerView(layer);
+                    highlightSelect = layerView.highlight(placeGraphic);
+
+                    // Centrar la vista sobre el elemento seleccionado
+                    view.goTo(placeGraphic);
+
+                    // Pasamos como parámetros los parámetros de la petición del detalle y el lugar
+                    getDetails(fetchPlaceParameters, placePoint);
+                });
+                resultPanel.appendChild(infoDiv);
+            }
+
+            // Coloca cada atributo en el panel de la izquierda
+            function setAttribute(heading, icon, validValue) {
+                if (validValue) {
+                    const element = document.createElement("calcite-block");
+                    element.heading = heading;
+                    element.description = validValue;
+                    const attributeIcon = document.createElement("calcite-icon");
+                    attributeIcon.icon = icon;
+                    attributeIcon.slot = "icon";
+                    attributeIcon.scale = "m";
+                    element.appendChild(attributeIcon);
+                    infoPanel.appendChild(element);
+                }
+            }
+
+            // Obtener detalles para el panel de la izquierda
+            async function getDetails(fetchPlaceParameters, placePoint) {
+                // Obtener los detalles
+                const result = await places.fetchPlace(fetchPlaceParameters);
+                const placeDetails = result.placeDetails;
+
+                // Move the view to center on the selected place feature
+                // view.goTo(placePoint);
+
+                // Creación del panel de la izquierda para poner información del lugar
+                infoPanel = document.createElement("calcite-flow-item");
+                flow.appendChild(infoPanel);
+                infoPanel.heading = placeDetails.name;
+                infoPanel.description = placeDetails.categories[0].label;
+
+                // Atributos para cada lugar con la función setAttribute
+                setAttribute("Descripción", "information", placeDetails.description);
+                setAttribute(
+                    "Dirección",
+                    "map-pin",
+                    placeDetails.address.streetAddress
+                );
+                setAttribute("Teléfono", "mobile", placeDetails.contactInfo.telephone);
+                setAttribute("Horario", "clock", placeDetails.hours.openingText);
+                setAttribute("Valoración", "star", placeDetails.rating.user);
+                setAttribute(
+                    "Email",
+                    "email-address",
+                    placeDetails.contactInfo.email
+                );
+                setAttribute(
+                    "Facebook",
+                    "speech-bubble-social",
+                    placeDetails.socialMedia.facebookId
+                        ? `www.facebook.com/${placeDetails.socialMedia.facebookId}`
+                        : null
+                );
+                setAttribute(
+                    "Twitter",
+                    "speech-bubbles",
+                    placeDetails.socialMedia.twitter
+                        ? `www.twitter.com/${placeDetails.socialMedia.twitter}`
+                        : null
+                );
+                setAttribute(
+                    "Instagram",
+                    "camera",
+                    placeDetails.socialMedia.instagram
+                        ? `www.instagram.com/${placeDetails.socialMedia.instagram}`
+                        : null
+                );
+                // Al seleccionar la fecha de volver del menú, se quita el destacado y se cierra el popup del elemento anterior
+                infoPanel.addEventListener("calciteFlowItemBack", async () => {
+                    view.closePopup();
+                    highlightSelect.remove();
+                    highlightSelect = null;
+                });
+            };
+        });
+    </script>
+
+</body>
+
+</html>

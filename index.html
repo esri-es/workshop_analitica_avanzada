@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="stylesheet" href="https://js.arcgis.com/4.27/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.27/"></script>
+    
+    <!-- Calcite -->
+    <script type="module" src="https://js.arcgis.com/calcite-components/1.4.2/calcite.esm.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://js.arcgis.com/calcite-components/1.4.2/calcite.css" />
+
+    <title>Uso del suelo en Rueda</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/2836/2836993.png">
+
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+        #card-container {
+            position: absolute;
+            z-index: 2;
+            top: 10px;
+            right: 10px;
+        }
+        #uva {
+            width: 25px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="card-container" style="width:280px">
+        <calcite-card>
+            <span slot="title"> <img id="uva" src="https://cdn-icons-png.flaticon.com/512/2836/2836993.png" alt="Icono racimo de uva"> Denominación de Origen Rueda</span>
+            <p>
+                Rueda es una denominación de origen protegida cuya zona de producción se encuentra en las provincias de <b>Valladolid, Segovia y Ávila </b> (España). 
+            </p>
+            <p>
+                Esta D.O. está integrada por 72 municipios de los cuales 53 se sitúan al sur de la provincia de Valladolid, 17 al oeste de Segovia y 2 al norte de Ávila.
+            </p>
+            <p>
+                El carácter Rueda está definido por tres elementos: la uva Verdejo,  el clima mediterráneo continentalizado y los suelos cascajosos.
+            </p>
+
+            <h3>Rueda (Valladolid)</h3>
+            <p>Rueda es una localidad y municipio de la provincia de Valladolid, Castilla y León. Es centro neurálgico de una de las zonas de vinos blancos más importante de España, la Denominación de Origen Rueda. </p>
+            <p>Tiene una población de 1300 habitantes a 1 de enero de 2017, según el INE. El gentilicio es rodense o popularmente caleros, este último debido a la gran cantidad de cal que tiene esta villa.</p>
+        </calcite-card>
+    </div>
+    <div id="viewDiv"></div>
+
+    <script type="text/plain" id="land-use">
+    
+        var use = DomainName($feature,"USO_SIGPAC");
+        if(use == "Edificaciones" || use == "Zona Urbana" || use == "Viales") {
+            return "Zonas Edificadas";
+        } else if (use == "Improductivos" || use == "Tierras arables") {
+            return "No productoras";
+        } else if (use == "Pasto arbustivo" || use == "Pastizal" || use == "Pasto con arbolado") {
+            return "Pasto";
+        } else if (use == "Viñedo") {
+            return "Viñedo";
+        } else if (use == "Corrientes y superficies de agua") {
+            return "Agua";
+        } else if (use == "Forestal") {
+            return "Bosque";
+        } else if (use == "Frutales" || use == "Olivar" || use == "Frutos secos") {
+            return "Otros cultivos arbóreos";
+        }
+        
+    </script>
+
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/layers/FeatureLayer"
+        ], function (
+            Map,
+            MapView,
+            FeatureLayer
+        ) {
+            const landUse = document.getElementById("land-use").text;
+            let arcadeRenderer = {
+                type: "unique-value",
+                valueExpression: landUse,
+                uniqueValueInfos: [
+                    {
+                        value: "Zonas Edificadas",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [189, 126, 190, 0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "No productoras",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [253,127,111,0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Pasto",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [126,176,213, 0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Viñedo",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [178, 2244, 97, 0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Bosque",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [255,181,90,0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Agua",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [255, 238, 101, 0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                    {
+                        value: "Otros cultivos arbóreos",
+                        symbol: {
+                            type: "simple-fill",
+                            color: [190, 185, 219, 0.5],
+                            outline: {
+                                width: 0.2,
+                                color: [0, 0, 0, 0.1],
+                            },
+                        },
+                    },
+                ],
+            };
+
+            var rueda = new FeatureLayer({
+                url: "https://services1.arcgis.com/YFraetVkEAF1lMag/ArcGIS/rest/services/Recintos_SIGPAC_Rueda/FeatureServer/0",
+                renderer: arcadeRenderer,
+            });
+
+            const map = new Map({
+                basemap: "streets-navigation-vector",
+            });
+
+            const view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [-4.959, 41.41],
+                zoom: 11,
+                container: "viewDiv",
+            });
+           
+            map.add(rueda); 
+        });
+    </script>
+
+</body>
+
+</html>
