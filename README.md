@@ -1,4 +1,4 @@
-# 📊 🌍 Workshop Analítica avanzada _ 20 / 06 /2023
+# 📊 🌍 Workshop Analítica avanzada 20 / 06 /2023
 
 En este repositorio podéis encontrar los códigos de los ejemplos que se han mostrado durante el workshop.
 1. ArcGIS Notebook: [Análisis de fraude](./AnalisisFraude.ipynb).
