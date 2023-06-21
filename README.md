@@ -7,11 +7,11 @@ En este repositorio podéis encontrar los códigos de los ejemplos que se han mo
 * ArcGIS Notebook: Análisis de fraude. [Código](./AnalisisFraude.ipynb) 
 ![Resultado del análisis](./assets/Fraude.png)
 
-* ArcGIS Notebook: Análisis de siniestralidad. [Código](./00_Accidentes_Madrid.ipynb) - [Explicación](./00_Accidentes_Madrid.html)
+* ArcGIS Notebook: Análisis de siniestralidad. [Código](./00_Accidentes_Madrid.ipynb)
 ![Siniestralidad en Madrid](https://www.arcgis.com/sharing/rest/content/items/10bc2a493a974d5caf024ff13d7891b3/resources/images/widget_178/1622195050113.jpg)
 
 ## GeoAI: Capacidades analíticas geoespaciales avanzadas.
-* ArcGIS GeoAnalytics Engine: Análisis en tiempo real [Código](./geoanalyticsEngine.ipynb) - [Explicación](./geoanalyticsEngine.ipynb)
+* ArcGIS GeoAnalytics Engine: Análisis en tiempo real [Código](./geoanalyticsEngine.ipynb)
 ![GeoAnalytics Engine](./assets/geoanalytics.png)
 
 * Deep Learning en ArcGIS [Código](./Detecci%C3%B3nBateasIllaDeArousa.ipynb)
